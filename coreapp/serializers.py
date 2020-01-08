@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth.models import User
+from .models import PlaidItem
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -34,3 +35,18 @@ class UserSerializerWithToken(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('token', 'username', 'password')
+
+
+class LinkBankAccountSerializer(serializers.Serializer):
+    public_token = serializers.CharField(max_length=200)
+
+
+class PlaidItemSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = '__all__'
+        model = PlaidItem
+
+    def get_username(self, obj):
+        return obj.user.username
