@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth.models import User
-from .models import PlaidItem
+from .models import PlaidItem, Transaction
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -50,3 +50,9 @@ class PlaidItemSerializer(serializers.ModelSerializer):
 
     def get_username(self, obj):
         return obj.user.username
+
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = Transaction
