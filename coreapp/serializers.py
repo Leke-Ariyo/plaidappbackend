@@ -8,11 +8,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username',)
+        fields = ('username', 'email', 'password')
+        extra_kwargs = {"password": {"write_only": True}}
 
 
 class UserSerializerWithToken(serializers.ModelSerializer):
-
+    email = serializers.CharField(max_length=30)
     token = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True)
 
@@ -26,15 +27,18 @@ class UserSerializerWithToken(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
+        #email = validated_data('email')
+
         instance = self.Meta.model(**validated_data)
         if password is not None:
             instance.set_password(password)
+            email = validated_data.get('email', instance.email)
         instance.save()
         return instance
 
     class Meta:
         model = User
-        fields = ('token', 'username', 'password')
+        fields = ('token', 'username', 'password', 'email')
 
 
 class LinkBankAccountSerializer(serializers.Serializer):
