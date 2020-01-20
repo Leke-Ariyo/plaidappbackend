@@ -7,11 +7,15 @@ from rest_framework.views import APIView
 from .serializers import (UserSerializer,
                           UserSerializerWithToken,
                           LinkBankAccountSerializer,
-                          TransactionSerializer)
+                          TransactionSerializer,
+                          TransactionCategorySerializer)
 from plaid import Client
-from .models import PlaidItem, Transaction, TransactionCategory
+from .models import PlaidItem, Transaction, TransactionCategory, StoreName
 from django.conf import settings
 import datetime
+from django.utils import timezone
+from django.db.models import Q
+from .pagination import Pagination
 
 client = Client(
         client_id=settings.PLAID_CLIENT_ID,
@@ -19,6 +23,7 @@ client = Client(
         public_key=settings.PLAID_PUBLIC_KEY,
         environment=settings.PLAID_ENV
     )
+
 
 @api_view(['GET'])
 def current_user(request):
@@ -89,30 +94,34 @@ class LinkBankAccount(APIView):
                                                    )
                 transactions.extend(response['transactions'])
             for transaction in transactions:
-                transaction_obj = Transaction.objects.create(
-                    item=item,
-                    transaction_id=transaction['transaction_id'],
-                    account_id=transaction['account_id'],
-                    amount=transaction['amount'],
-                    iso_currency_code=transaction['iso_currency_code'],
-                    date=transaction['date'],
-                    address=transaction['location']['address'],
-                    city=transaction['location']['city'],
-                    region=transaction['location']['region'],
-                    postal_code=transaction['location']['postal_code'],
-                    country=transaction['location']['country'],
-                    latitude=transaction['location']['lat'],
-                    longitude=transaction['location']['lon'],
-                    store_number=transaction['location']['store_number'],
-                    store_name=transaction['name'],
-                    payment_channel=transaction['payment_channel']
-                )
+                if not Transaction.objects.filter(transaction_id=transaction['transaction_id']).first():
 
-                for category in transaction['category']:
-                    category_obj = TransactionCategory.objects.get_or_create(
-                        title=category
-                    )[0]
-                    transaction_obj.categories.add(category_obj)
+                    transaction_obj = Transaction.objects.create(
+                        item=item,
+                        transaction_id=transaction['transaction_id'],
+                        account_id=transaction['account_id'],
+                        amount=transaction['amount'],
+                        iso_currency_code=transaction['iso_currency_code'],
+                        date=transaction['date'],
+                        address=transaction['location']['address'],
+                        city=transaction['location']['city'],
+                        region=transaction['location']['region'],
+                        postal_code=transaction['location']['postal_code'],
+                        country=transaction['location']['country'],
+                        latitude=transaction['location']['lat'],
+                        longitude=transaction['location']['lon'],
+                        # store_name=store_name,
+                        payment_channel=transaction['payment_channel']
+                    )
+                    store_name = StoreName.objects.get_or_create(name=transaction['name'])
+                    for category in transaction['category']:
+                        category_obj = TransactionCategory.objects.get_or_create(
+                            title=category
+                        )[0]
+                        transaction_obj.categories.add(category_obj)
+                        store_name[0].categories.add(category_obj)
+                    store_name[0].save()
+                    transaction_obj.store_name = store_name[0]
                     transaction_obj.save()
             # web hook
             client.Item.webhook.update(item.access_token,
@@ -146,13 +155,34 @@ class GetAuth(APIView):
 
 class TransactionViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = TransactionSerializer
+    pagination_class = Pagination
 
     def get_queryset(self):
-        queryset = Transaction.objects.all()
-        return queryset
+        month = self.request.GET.get("month")
+        print(month)
+        month_options = ["this_month", "last_month", "3months", "12months", "all"]
 
-    def post(self, request):
-        item = request.data.get('item_id')
+        # query
+        category = self.request.GET.get("category")
+        date = self.request.GET.get("date")
+        q = self.request.GET.get("q")
+        queryset = Transaction.objects.all()
+        if q:
+            queryset = queryset.filter(item__user__username=q)
+        if category:
+            queryset = queryset.filter(categories=int(category))
+        if month and month == "this month":
+            year_ = timezone.now().year
+            month_ = timezone.now().month
+            queryset = queryset.filter(date__gte=datetime.date(year_, month_, 1))
+        if month and month == "last month":
+            queryset = queryset.filter(date__gte=(timezone.now()+datetime.timedelta(weeks=-4)))
+        if month and month == "3months":
+            queryset = queryset.filter(date__gte=(timezone.now() + datetime.timedelta(weeks=-12)))
+        if month and month == "12months":
+            queryset = queryset.filter(date__gte=(timezone.now() + datetime.timedelta(weeks=-52)))
+        return queryset
 
 
 class TransactionWebHook(APIView):
@@ -182,7 +212,7 @@ class TransactionWebHook(APIView):
                     transactions.extend(response['transactions'])
 
                 for transaction in transactions:
-                    if not Transaction.objects.filter(pk=transaction['transaction_id']).first():
+                    if not Transaction.objects.filter(transaction_id=transaction['transaction_id']).first():
 
                         transaction_obj = Transaction.objects.create(
                             item=item_obj,
@@ -198,25 +228,76 @@ class TransactionWebHook(APIView):
                             country=transaction['location']['country'],
                             latitude=transaction['location']['lat'],
                             longitude=transaction['location']['lon'],
-                            store_number=transaction['location']['store_number'],
-                            store_name=transaction['name'],
+                            # store_name=store_name,
                             payment_channel=transaction['payment_channel']
                         )
-
+                        store_name = StoreName.objects.get_or_create(name=transaction['name'])
                         for category in transaction['category']:
                             category_obj = TransactionCategory.objects.get_or_create(
                                 title=category
                             )[0]
                             transaction_obj.categories.add(category_obj)
-                            transaction_obj.save()
+                            store_name.categories.add(category_obj)
+                        store_name.save()
+                        transaction_obj.store_name = store_name
+                        transaction_obj.save()
 
             if webhook_code and (webhook_code == 'TRANSACTIONS_REMOVED'):
                 removed_transactions = request.data.get("removed_transactions")
                 for transaction in removed_transactions:
                     try:
-                        t = Transaction.objects.get(pk=transaction)
+                        t = Transaction.objects.get(transaction_id=transaction)
                         t.delete()
                     except:
                         pass
 
-        return Response({"message": "successfully added new transaction"}, status=status.HTTP_200_OK)
+        return Response({"message": "successfully performed updates on transaction"}, status=status.HTTP_200_OK)
+
+
+class GetUserStoreVisit(APIView):
+
+    def get(self, request):
+        user = request.user
+
+        stores = StoreName.objects.filter(transaction__item__user=user).distinct()
+        if request.GET.get("all"):
+            stores = StoreName.objects.all()[:10]
+        if request.GET.get("username"):
+            user_obj = User.objects.filter(username=request.GET.get("username")).first()
+            if user_obj:
+                stores = StoreName.objects.filter(transaction__item__user=user_obj).distinct()
+            else:
+                return Response([])
+        if request.GET.get("category"):
+            category = TransactionCategory.objects.filter(pk=int(request.GET.get("category")))
+            if category:
+                stores = stores.filter(categories__in=category)
+            else:
+                return Response({"message": "invalid category"}, status=status.HTTP_400_BAD_REQUEST)
+        response = []
+        for store in stores:
+            visit_count = store.transaction_set.count()
+            if request.GET.get("username"):
+                visit_count = store.transaction_set.\
+                    filter(item__user__username=request.GET.get("username")).count()
+            res = {
+                "id": store.pk,
+                "name": store.name,
+                "visit_count": visit_count,
+                "categories": [cat.title for cat in store.categories.all()]
+            }
+            response.append(res)
+        response = sorted(response, key=lambda x: x['visit_count'], reverse=True)
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class TransactionCategoryViewSet(viewsets.ModelViewSet):
+    permissions_classes = (permissions.AllowAny,)
+    serializer_class = TransactionCategorySerializer
+
+
+    def get_queryset(self):
+        queryset = TransactionCategory.objects.all()
+
+        return queryset
+

@@ -1,18 +1,19 @@
 from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth.models import User
-from .models import PlaidItem, Transaction
+from .models import PlaidItem, Transaction, TransactionCategory
 
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username',)
+        fields = ('username', 'email', 'password')
+        extra_kwargs = {"password": {"write_only": True}}
 
 
 class UserSerializerWithToken(serializers.ModelSerializer):
-
+    email = serializers.CharField(max_length=30)
     token = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True)
 
@@ -26,15 +27,18 @@ class UserSerializerWithToken(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
+        #email = validated_data('email')
+
         instance = self.Meta.model(**validated_data)
         if password is not None:
             instance.set_password(password)
+            email = validated_data.get('email', instance.email)
         instance.save()
         return instance
 
     class Meta:
         model = User
-        fields = ('token', 'username', 'password')
+        fields = ('token', 'username', 'password', 'email')
 
 
 class LinkBankAccountSerializer(serializers.Serializer):
@@ -53,6 +57,31 @@ class PlaidItemSerializer(serializers.ModelSerializer):
 
 
 class TransactionSerializer(serializers.ModelSerializer):
+    cats = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    store_title = serializers.SerializerMethodField()
+
     class Meta:
         fields = '__all__'
         model = Transaction
+
+    def get_username(self, obj):
+        return obj.item.user.username
+
+    def get_cats(self, obj):
+        categories = [
+            {"id": category.pk, "title": category.title} for category in obj.categories.all()
+        ]
+        return categories
+
+    def get_store_title(self, obj):
+        if obj.store_name:
+            return obj.store_name.name
+        return ''
+
+
+class TransactionCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = TransactionCategory
+

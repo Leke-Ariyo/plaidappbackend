@@ -156,7 +156,8 @@ CORS_ORIGIN_WHITELIST = (
 )
 
 JWT_AUTH = {
-    'JWT_RESPONSE_PAYLOAD_HANDLER': 'plaidbe.utils.my_jwt_response_handler'
+    'JWT_RESPONSE_PAYLOAD_HANDLER': 'plaidbe.utils.my_jwt_response_handler',
+    'JWT_VERIFY_EXPIRATION': False,
 }
 
 PLAID_CLIENT_ID = '5e14bb4fb1398b0011fa9fce'
