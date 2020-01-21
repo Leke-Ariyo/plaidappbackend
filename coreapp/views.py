@@ -259,19 +259,18 @@ class GetUserStoreVisit(APIView):
     def get(self, request):
         user = request.user
 
-        stores = StoreName.objects.filter(transaction__item__user=user).distinct()
+        stores = StoreName.objects.all()
         if request.GET.get("all"):
             stores = StoreName.objects.all()[:10]
         if request.GET.get("username"):
             user_obj = User.objects.filter(username=request.GET.get("username")).first()
             if user_obj:
                 stores = StoreName.objects.filter(transaction__item__user=user_obj).distinct()
-            else:
-                return Response([])
         if request.GET.get("category"):
             category = TransactionCategory.objects.filter(pk=int(request.GET.get("category")))
             if category:
                 stores = stores.filter(categories__in=category)
+
             else:
                 return Response({"message": "invalid category"}, status=status.HTTP_400_BAD_REQUEST)
         response = []
@@ -301,3 +300,8 @@ class TransactionCategoryViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+
+class SignupViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserSerializer
+    queryset = User.objects.all()

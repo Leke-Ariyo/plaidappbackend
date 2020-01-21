@@ -3,12 +3,14 @@ from .views import (current_user, UserList,
                     LinkBankAccount, GetAuth,
                     TransactionViewSet,
                     GetUserStoreVisit,
-                    TransactionCategoryViewSet
+                    TransactionCategoryViewSet,
+                    SignupViewSet
                     )
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register('transactions', TransactionViewSet, basename='transactions')
+router.register('signup', SignupViewSet, basename='signup')
 router.register('transaction-category', TransactionCategoryViewSet, basename='transaction-category')
 
 urlpatterns = [
