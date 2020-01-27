@@ -94,7 +94,14 @@ class LinkBankAccount(APIView):
                                                    )
                 transactions.extend(response['transactions'])
             for transaction in transactions:
-                if not Transaction.objects.filter(transaction_id=transaction['transaction_id']).first():
+                needed_categories = ['Fast Food', 'Coffee Shop', 'Restaurant', 'Food and Drink']
+                needed = False
+                category_set = set(transaction['category'])
+                for cat in needed_categories:
+                    if cat in category_set:
+                        needed = True
+                if (not Transaction.objects.filter(transaction_id=transaction['transaction_id']).first())\
+                        and needed:
 
                     transaction_obj = Transaction.objects.create(
                         item=item,
@@ -115,11 +122,12 @@ class LinkBankAccount(APIView):
                     )
                     store_name = StoreName.objects.get_or_create(name=transaction['name'])
                     for category in transaction['category']:
-                        category_obj = TransactionCategory.objects.get_or_create(
-                            title=category
-                        )[0]
-                        transaction_obj.categories.add(category_obj)
-                        store_name[0].categories.add(category_obj)
+                        if category in needed_categories:
+                            category_obj = TransactionCategory.objects.get_or_create(
+                                title=category
+                            )[0]
+                            transaction_obj.categories.add(category_obj)
+                            store_name[0].categories.add(category_obj)
                     store_name[0].save()
                     transaction_obj.store_name = store_name[0]
                     transaction_obj.save()
@@ -266,6 +274,8 @@ class GetUserStoreVisit(APIView):
             user_obj = User.objects.filter(username=request.GET.get("username")).first()
             if user_obj:
                 stores = StoreName.objects.filter(transaction__item__user=user_obj).distinct()
+            else:
+                stores = []
         if request.GET.get("category"):
             category = TransactionCategory.objects.filter(pk=int(request.GET.get("category")))
             if category:

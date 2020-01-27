@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth.models import User
 from .models import PlaidItem, Transaction, TransactionCategory
+from django.utils import timesince
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -69,6 +70,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     cats = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
     store_title = serializers.SerializerMethodField()
+    time_since = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
@@ -87,6 +89,9 @@ class TransactionSerializer(serializers.ModelSerializer):
         if obj.store_name:
             return obj.store_name.name
         return ''
+
+    def get_time_since(self, obj):
+        return timesince.timesince(obj.date)
 
 
 class TransactionCategorySerializer(serializers.ModelSerializer):
