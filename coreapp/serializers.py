@@ -1,8 +1,10 @@
+from datetime import date
+
 from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth.models import User
 from .models import PlaidItem, Transaction, TransactionCategory
-from django.utils import timesince
+from django.utils import timezone
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -91,7 +93,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         return ''
 
     def get_time_since(self, obj):
-        return timesince.timesince(obj.date)
+        return (date(timezone.now().year, timezone.now().month, timezone.now().day) - obj.date).days
 
 
 class TransactionCategorySerializer(serializers.ModelSerializer):
