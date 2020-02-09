@@ -69,7 +69,6 @@ class LinkBankAccount(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
     def post(self, request):
-        print(request.data)
         serializer = LinkBankAccountSerializer(data=request.data)
         if serializer.is_valid():
 
@@ -151,11 +150,9 @@ class GetAuth(APIView):
             # user = request.user
             pass
         items = PlaidItem.objects.filter(user=user)
-        print(items)
         for item in items:
             auth_response = client.Auth.get(item.access_token)
             auth_responses = auth_responses + auth_response['accounts']
-            print(auth_responses)
         return Response({
             'accounts': auth_responses
         }, status=status.HTTP_200_OK)
@@ -168,7 +165,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         month = self.request.GET.get("month")
-        print(month)
         month_options = ["this_month", "last_month", "3months", "12months", "all"]
 
         # query
