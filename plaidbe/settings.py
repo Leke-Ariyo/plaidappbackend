@@ -24,7 +24,7 @@ SECRET_KEY = 'n&li$(oud7u27=yr@5q)efccn9rcxlockm(58=qydc+19(*xu0'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -149,9 +149,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 CORS_ORIGIN_WHITELIST = (
-    'http://localhost:3000',
+  'http://localhost:3000',
     'http://localhost:8000',
     'http://localhost:8080',
+    'https://getflip-backend.herokuapp.com'
 
 )
 
