@@ -54,8 +54,3 @@ class Transaction(models.Model):
     def __str__(self):
         return self.item.user.username + ' - ' + self.transaction_id
 
-"""
-a = {'account_id': 'ANEyKz43pxiXV6e6eWVAc86g39Ne6qu17RQXe', 'account_owner': None, 'amount': 12, 'authorized_date': None, 'category': ['Food and Drink', 'Restaurants'], 'category_id': '13005000', 'date': '2020-01-13', 'iso_currency_code': 'USD', 'location': {'address': None, 'city': None, 'country': None, 'lat': None, 'lon': None, 'postal_code': None, 'region': None, 'store_number': '3322'}, 'name': "McDonald's", 'paymen
-t_channel': 'in store', 'payment_meta': {'by_order_of': None, 'payee': None, 'payer': None, 'payment_method': None, 'payment_processor': None, 'ppd_id': None, 'reason': None, 'reference_number': None}, 'pending
-': False, 'pending_transaction_id': None, 'transaction_id': '31AkJELgdGcPgLBLBKgPiNekaxw5mRuqqlR34', 'transaction_type': 'place', 'unofficial_currency_code': None}
-"""
