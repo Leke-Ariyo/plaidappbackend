@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'n&li$(oud7u27=yr@5q)efccn9rcxlockm(58=qydc+19(*xu0'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -90,15 +90,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    },
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    #     'NAME': 'plaid',
-    #     'USER': 'plaid_user',
-    #     'PASSWORD': 'plaid_password',
-    #     'HOST': 'localhost',
-    #     'PORT': '5432',
-    # }
+    }
 }
 
 REST_FRAMEWORK = {
@@ -148,22 +140,16 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CORS_ORIGIN_WHITELIST = (
-  'http://localhost:3000',
-    'http://localhost:8000',
-    'http://localhost:8080',
-    'https://getflip-backend.herokuapp.com'
-
-)
+CORS_ORIGIN_WHITELIST = ('*')
 
 JWT_AUTH = {
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'plaidbe.utils.my_jwt_response_handler',
     'JWT_VERIFY_EXPIRATION': False,
 }
 
-PLAID_CLIENT_ID = '5e14bb4fb1398b0011fa9fce'
-PLAID_SECRET = '0f33f9a5c6f6e2964f342b23ba4a97'
-PLAID_PUBLIC_KEY = '3707dc7847c12157f8b7694fc6bbfa'
-PLAID_PRODUCTS = 'transactions'
-PLAID_COUNTRY_CODES = 'US,CA,GB,FR,ES'
-PLAID_ENV = 'sandbox'
+PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
+PLAID_SECRET = os.getenv('PLAID_SECRET')
+PLAID_PUBLIC_KEY = os.getenv('PLAID_SECRET')
+PLAID_PRODUCTS = os.getenv('PLAID_SECRET')
+PLAID_COUNTRY_CODES = os.getenv('PLAID_COUNTRY_CODES')
+PLAID_ENV = os.getenv('PLAID_ENV')
