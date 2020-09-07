@@ -1,7 +1,7 @@
 ## Plaid Backend
 
 ## Description
-Plaid Backend is an application built with django rest framework to supply APIs for using plaid to connect with customers of your e-commerce website and easily person queries on a dashboard to be build off the API.
+Plaid Backend is an application built with django rest framework to supply APIs for using plaid to connect with customers of your e-commerce website and easily person queries on a dashboard to be build off the API, it contains transaction histories and is also connected to Stripe as a payment gateway.
 
 					
 
